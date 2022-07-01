@@ -15,6 +15,7 @@ struct LineGraph: View {
     @State var currentPlot = ""
     @State var offset: CGSize = .zero
     @State var showPlot: Bool = false
+    @State var translation: CGFloat = 0
     var body: some View {
         GeometryReader { proxy in
             
@@ -72,6 +73,8 @@ struct LineGraph: View {
                         .padding(.vertical, 6)
                         .padding(.horizontal, 10)
                         .background(Color("Gradient1"), in: Capsule())
+                        .offset(x: translation < 10 ? 30 : 0)
+                        .offset(x: translation < (proxy.size.width - 60) ? -30 : 0)
                     
                     Rectangle()
                         .fill(Color("Gradient1"))
@@ -94,8 +97,8 @@ struct LineGraph: View {
                 //Fixed Frame
                     .frame(width: 80, height: 170)
                     .offset(y: 70)
-                    .offset(offset),
-//                    .opacity(showPlot ? 1 : 0)
+                    .offset(offset)
+                    .opacity(showPlot ? 1 : 0),
                 alignment: .bottomLeading
             )
             .contentShape(Rectangle())
@@ -103,6 +106,7 @@ struct LineGraph: View {
                 withAnimation { showPlot = true }
                 
                 let translation = value.location.x - 40
+                self.translation = translation
                 // Getting Index...
                 let index = max(min(Int((translation / width).rounded() + 1), data.count - 1), 0)
                 currentPlot = "$ \(data[index])"
@@ -111,6 +115,19 @@ struct LineGraph: View {
                 withAnimation { showPlot = false }
             }))
         }
+        .overlay(
+            VStack(alignment: .leading) {
+                let max = data.max() ?? 0
+                Text("$ \(Int(max))")
+                    .font(.caption.bold())
+                
+                Spacer()
+                
+                Text("$ 0")
+                    .font(.caption.bold())
+            }
+                .frame(maxWidth: .infinity, alignment: .leading)
+        )
         .padding(.horizontal, 10)
     }
     @ViewBuilder
