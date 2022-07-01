@@ -14,23 +14,26 @@ struct LineGraph: View {
     
     @State var currentPlot = ""
     @State var offset: CGSize = .zero
+    @State var showPlot: Bool = false
     var body: some View {
         GeometryReader { proxy in
+            
+            let height = proxy.size.height
+            let width = proxy.size.width / CGFloat(data.count - 1)
+            
+            let maxPoints = (data.max() ?? 0) + 100
+            // Getting progress and multiplyinh with height
+            let points = data.enumerated().compactMap { item -> CGPoint in
+                let progress = item.element / maxPoints
+                // height
+                let pathHeight = progress * height
+                // width..
+                let pathWidth = width * CGFloat(item.offset)
+                // Since we need peak to top not bottom
+                return CGPoint(x: pathWidth, y: -pathHeight + height)
+            }
+            
             ZStack {
-                let height = proxy.size.height
-                let width = proxy.size.width / CGFloat(data.count - 1)
-                
-                let maxPoints = (data.max() ?? 0) + 100
-                // Getting progress and multiplyinh with height
-                let points = data.enumerated().compactMap { item -> CGPoint in
-                    let progress = item.element / maxPoints
-                    // height
-                    let pathHeight = progress * height
-                    // width..
-                    let pathWidth = width * CGFloat(item.offset)
-                    // Since we need peak to top not bottom
-                    return CGPoint(x: pathWidth, y: -pathHeight + height)
-                }
                 // Converting plot as points....
                 
                 // Path
@@ -69,8 +72,44 @@ struct LineGraph: View {
                         .padding(.vertical, 6)
                         .padding(.horizontal, 10)
                         .background(Color("Gradient1"), in: Capsule())
+                    
+                    Rectangle()
+                        .fill(Color("Gradient1"))
+                        .frame(width: 1, height: 40)
+                        .padding(.top)
+                    
+                    Circle()
+                        .fill(Color("Gradient1"))
+                        .frame(width: 22, height: 22)
+                        .overlay(
+                            Circle()
+                                .fill(.white)
+                                .frame(width: 10, height: 10)
+                        )
+                    
+                    Rectangle()
+                        .fill(Color("Gradient1"))
+                        .frame(width: 1, height: 50)
                 }
+                //Fixed Frame
+                    .frame(width: 80, height: 170)
+                    .offset(y: 70)
+                    .offset(offset),
+//                    .opacity(showPlot ? 1 : 0)
+                alignment: .bottomLeading
             )
+            .contentShape(Rectangle())
+            .gesture(DragGesture().onChanged({ value in
+                withAnimation { showPlot = true }
+                
+                let translation = value.location.x - 40
+                // Getting Index...
+                let index = max(min(Int((translation / width).rounded() + 1), data.count - 1), 0)
+                currentPlot = "$ \(data[index])"
+                offset = CGSize(width: points[index].x - 40, height: points[index].y - height)
+            }).onEnded({ value in
+                withAnimation { showPlot = false }
+            }))
         }
         .padding(.horizontal, 10)
     }
